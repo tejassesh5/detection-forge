@@ -4,9 +4,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import structlog
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func, select as sa_select2
 
 from ..config import get_settings
 from ..db import init_db
@@ -57,9 +59,6 @@ def create_app() -> FastAPI:
     from .routes import coverage as coverage_router
     app.include_router(coverage_router.router, prefix="/coverage", tags=["coverage"])
 
-    from fastapi import Request
-    from fastapi.responses import HTMLResponse
-
     @app.get("/health")
     async def health() -> dict:
         return {"status": "ok", "version": "0.1.0"}
@@ -84,6 +83,27 @@ def create_app() -> FastAPI:
         return app.state.templates.TemplateResponse(
             "rule_editor.html", {"request": request, "rule": rule}
         )
+
+    from ..db import Rule as RuleDB2, CTIRecord as CTIRecord2
+
+    @app.get("/metrics", include_in_schema=False)
+    async def metrics(request: Request):
+        async with request.app.state.db() as session:
+            rule_count = (
+                await session.execute(sa_select2(func.count()).select_from(RuleDB2))
+            ).scalar() or 0
+            cti_count = (
+                await session.execute(sa_select2(func.count()).select_from(CTIRecord2))
+            ).scalar() or 0
+        output = (
+            "# HELP detection_forge_rules_total Total rules generated\n"
+            "# TYPE detection_forge_rules_total gauge\n"
+            f"detection_forge_rules_total {rule_count}\n"
+            "# HELP detection_forge_cti_total Total CTI reports ingested\n"
+            "# TYPE detection_forge_cti_total gauge\n"
+            f"detection_forge_cti_total {cti_count}\n"
+        )
+        return PlainTextResponse(output, media_type="text/plain; version=0.0.4")
 
     return app
 
