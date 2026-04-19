@@ -33,6 +33,13 @@ async def ingest_text(body: IngestRequest, request: Request, db: AsyncSession = 
     db.add(record)
     await db.commit()
 
+    if hasattr(request.app.state, "vector_store"):
+        await request.app.state.vector_store.upsert(
+            doc_id=item.id,
+            text=item.text,
+            payload={"title": item.title, "type": "cti"},
+        )
+
     return {
         "id": item.id,
         "title": item.title,

@@ -25,6 +25,17 @@ async def lifespan(app: FastAPI):
     app.state.db = await init_db(settings.database_url)
     app.state.settings = settings
     app.state.templates = TEMPLATES
+
+    from ..vector.store import VectorStore
+    settings = get_settings()
+    try:
+        vs = VectorStore(host=settings.qdrant_host, port=settings.qdrant_port)
+        await vs.ensure_collection()
+        app.state.vector_store = vs
+        log.info("qdrant.connected")
+    except Exception as e:
+        log.warning("qdrant.unavailable", error=str(e))
+
     log.info("startup.complete")
     yield
     log.info("shutdown")
