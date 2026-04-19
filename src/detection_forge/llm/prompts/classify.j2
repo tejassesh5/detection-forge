@@ -1,0 +1,11 @@
+You are a detection engineer. Given extracted threat intelligence, determine the best detection rule type.
+
+Extracted TTPs: {{ ttps | join(", ") }}
+Observed behaviors: {{ behaviors | join(", ") }}
+
+Respond ONLY with valid JSON:
+- "rule_type": "sigma" if this is best detected via log events, "yara" if via file/memory artifacts, "both" if both apply
+- "log_source": the most relevant Sigma log source (sysmon, windows_security, windows_powershell, proxy, linux_auth, network_connection, webserver)
+- "rationale": one sentence explaining the choice
+
+Respond ONLY with valid JSON. No markdown, no explanation.
