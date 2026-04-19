@@ -43,6 +43,9 @@ def create_app() -> FastAPI:
     app.include_router(cti_router.router, prefix="/api/cti", tags=["cti"])
     app.include_router(rules_router.router, prefix="/api/rules", tags=["rules"])
 
+    from .routes import coverage as coverage_router
+    app.include_router(coverage_router.router, prefix="/coverage", tags=["coverage"])
+
     from fastapi import Request
     from fastapi.responses import HTMLResponse
 

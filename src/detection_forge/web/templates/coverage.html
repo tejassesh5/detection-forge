@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Coverage — detection-forge{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold text-emerald-400 mb-6">ATT&amp;CK Coverage</h1>
+<div id="coverage-data"
+     hx-get="/coverage/api"
+     hx-trigger="load"
+     class="text-gray-400 text-sm">
+  Loading coverage data...
+</div>
+{% endblock %}
