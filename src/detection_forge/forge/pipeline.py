@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import yaml
+
 from jinja2 import Environment, FileSystemLoader
 
 from ..cti.models import CTIItem
@@ -24,8 +26,15 @@ def _render(template_name: str, **kwargs) -> str:
 def _parse_json_response(content: str | dict) -> dict:
     if isinstance(content, dict):
         return content
+    # Strip markdown code fences (```json ... ``` or ``` ... ```)
+    stripped = content.strip()
+    if stripped.startswith("```"):
+        lines = stripped.splitlines()
+        # Drop first line (```json or ```) and last line (```)
+        inner = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+        stripped = inner.strip()
     try:
-        return json.loads(content)
+        return json.loads(stripped)
     except json.JSONDecodeError as e:
         raise ValueError(f"LLM returned non-JSON: {e}\nContent: {content[:200]}") from e
 
@@ -66,6 +75,11 @@ class ForgePipeline:
         raw = _parse_json_response(draft_resp.content)
 
         content: str = raw.get("content", "")
+        # LLMs sometimes return rule as a dict under "rule" key instead of YAML string under "content"
+        if not content and "rule" in raw and isinstance(raw["rule"], dict):
+            content = yaml.dump(raw["rule"], default_flow_style=False, allow_unicode=True)
+            raw["title"] = raw["rule"].get("title", raw.get("title", cti.title))
+            raw["level"] = raw["rule"].get("level", raw.get("level", "medium"))
 
         # Stage D: Validate + Refine
         validator = validate_sigma if rule_type == RuleType.SIGMA else validate_yara
