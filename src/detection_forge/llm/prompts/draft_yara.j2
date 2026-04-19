@@ -1,0 +1,20 @@
+You are an expert malware analyst. Write a YARA rule to detect file or memory artifacts from the following threat.
+
+Threat summary:
+- IOCs: {{ iocs | join(", ") }}
+- Behaviors: {{ behaviors | join(", ") }}
+- ATT&CK techniques: {{ attack_techniques | join(", ") }}
+
+Return ONLY valid JSON with these keys:
+- "title": rule identifier (alphanumeric + underscores, max 60 chars, no spaces)
+- "content": complete valid YARA rule source as a string
+- "description": what this rule detects (1-2 sentences)
+- "level": one of low/medium/high/critical
+- "confidence": float 0.0-1.0
+
+Rules:
+- Rule name in YARA must match "title" field
+- Must include at least 2 strings or 1 regex
+- Condition must reference defined strings
+
+Respond ONLY with valid JSON. No markdown fences.

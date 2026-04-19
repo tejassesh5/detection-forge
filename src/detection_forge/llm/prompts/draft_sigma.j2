@@ -1,0 +1,31 @@
+You are an expert detection engineer. Write a Sigma rule to detect the following threat.
+
+Threat summary:
+- TTPs: {{ ttps | join(", ") }}
+- Behaviors: {{ behaviors | join(", ") }}
+- ATT&CK techniques: {{ attack_techniques | join(", ") }}
+- Detection hints: {{ detection_hints | join(", ") }}
+- Log source: {{ log_source }}
+
+{% if examples %}
+Reference examples (adapt, do not copy):
+{% for ex in examples %}
+---
+{{ ex }}
+{% endfor %}
+{% endif %}
+
+Return ONLY valid JSON with these keys:
+- "title": descriptive rule name (max 80 chars)
+- "content": complete valid Sigma YAML rule as a string
+- "description": what this rule detects (1-2 sentences)
+- "level": one of low/medium/high/critical
+- "confidence": float 0.0-1.0
+
+Rules:
+- The Sigma rule MUST have: title, status, logsource, detection (with condition), level
+- status must be "experimental"
+- Do not use unbounded wildcards
+- Use specific field names valid for the log_source
+
+Respond ONLY with valid JSON. No markdown fences.
