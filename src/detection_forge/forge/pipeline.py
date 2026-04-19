@@ -97,8 +97,14 @@ class ForgePipeline:
             raw.update(refined)
             errors = validator(content)
 
+        # Inject missing title into YAML content if validator flagged it
+        final_title = raw.get("title", cti.title)
+        if errors and any("title" in e.lower() for e in errors):
+            if not content.strip().startswith("title:"):
+                content = f"title: {final_title}\n" + content
+
         return RuleDraft(
-            title=raw.get("title", cti.title),
+            title=final_title,
             rule_type=rule_type,
             content=content,
             description=raw.get("description", ""),
