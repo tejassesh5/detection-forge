@@ -1,6 +1,50 @@
 {% extends "base.html" %}
-{% block title %}{{ rule.title }}{% endblock %}
+{% block title %}{{ rule.title }} — detection-forge{% endblock %}
 {% block content %}
-<h1 class="text-xl font-bold">{{ rule.title }}</h1>
-<pre class="mt-4 bg-gray-900 p-4 rounded text-sm font-mono">{{ rule.content }}</pre>
+<div class="space-y-6">
+  <div class="flex items-start justify-between">
+    <div>
+      <h1 class="text-xl font-bold">{{ rule.title }}</h1>
+      <div class="mt-1 flex gap-2 items-center">
+        <span class="text-xs px-2 py-0.5 rounded
+          {% if rule.rule_type == 'sigma' %}bg-blue-900 text-blue-300
+          {% else %}bg-purple-900 text-purple-300{% endif %}">
+          {{ rule.rule_type }}
+        </span>
+        <span class="text-xs text-gray-500">confidence: {{ "%.0f"|format(rule.confidence * 100) }}%</span>
+      </div>
+      <div class="mt-2 flex gap-1 flex-wrap">
+        {% for t in rule.attack_techniques %}
+        <span class="text-xs bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded">{{ t }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    <a href="/api/rules/{{ rule.id }}/export"
+       class="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-gray-300">
+      Export
+    </a>
+  </div>
+
+  <div>
+    <div id="monaco-editor" class="h-96 border border-gray-700 rounded overflow-hidden"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs/loader.js"></script>
+<script>
+  require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs' } });
+  require(['vs/editor/editor.main'], function() {
+    const content = {{ rule.content | tojson }};
+    const lang = '{{ rule.rule_type }}' === 'sigma' ? 'yaml' : 'plaintext';
+    monaco.editor.create(document.getElementById('monaco-editor'), {
+      value: content,
+      language: lang,
+      theme: 'vs-dark',
+      minimap: { enabled: false },
+      fontSize: 13,
+      lineNumbers: 'on',
+      scrollBeyondLastLine: false,
+    });
+  });
+</script>
 {% endblock %}
