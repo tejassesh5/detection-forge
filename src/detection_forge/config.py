@@ -42,3 +42,22 @@ def get_settings() -> Settings:
     if _settings is None:
         _settings = Settings()
     return _settings
+
+
+def build_gateway() -> "LLMGateway":
+    from detection_forge.llm.gateway import LLMGateway
+    from detection_forge.llm.providers.gemini import GeminiFlashProvider
+    from detection_forge.llm.providers.groq import GroqLlamaProvider
+    from detection_forge.llm.providers.ollama import OllamaProvider
+
+    settings = get_settings()
+    all_providers = {
+        LLMProviderName.GEMINI: lambda: GeminiFlashProvider(settings.gemini_api_key, settings.gemini_model),
+        LLMProviderName.GROQ: lambda: GroqLlamaProvider(settings.groq_api_key, settings.groq_model),
+        LLMProviderName.OLLAMA: lambda: OllamaProvider(settings.ollama_host, settings.ollama_model),
+    }
+    order = [settings.llm_primary] + [
+        f for f in settings.llm_fallback if f != settings.llm_primary
+    ]
+    providers = [all_providers[name]() for name in order if name in all_providers]
+    return LLMGateway(providers, max_retries=settings.llm_max_retries)
