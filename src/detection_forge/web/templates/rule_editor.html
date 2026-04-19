@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ rule.title }}{% endblock %}
+{% block content %}
+<h1 class="text-xl font-bold">{{ rule.title }}</h1>
+<pre class="mt-4 bg-gray-900 p-4 rounded text-sm font-mono">{{ rule.content }}</pre>
+{% endblock %}

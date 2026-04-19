@@ -50,6 +50,27 @@ def create_app() -> FastAPI:
     async def health() -> dict:
         return {"status": "ok", "version": "0.1.0"}
 
+    from sqlalchemy import select as sa_select
+    from ..db import Rule as RuleDB, CTIRecord
+
+    @app.get("/", response_class=HTMLResponse)
+    async def index(request: Request):
+        return app.state.templates.TemplateResponse(
+            "index.html", {"request": request}
+        )
+
+    @app.get("/rules/{rule_id}", response_class=HTMLResponse)
+    async def rule_detail(rule_id: str, request: Request):
+        async with request.app.state.db() as session:
+            result = await session.execute(sa_select(RuleDB).where(RuleDB.id == rule_id))
+            rule = result.scalar_one_or_none()
+        if not rule:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Not found")
+        return app.state.templates.TemplateResponse(
+            "rule_editor.html", {"request": request, "rule": rule}
+        )
+
     return app
 
 

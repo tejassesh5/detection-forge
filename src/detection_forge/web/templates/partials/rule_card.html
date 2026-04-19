@@ -1,0 +1,23 @@
+{% for rule in rules %}
+<div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+  <div class="flex items-start justify-between">
+    <h3 class="font-medium text-sm">{{ rule.title }}</h3>
+    <span class="text-xs px-2 py-0.5 rounded
+      {% if rule.rule_type == 'sigma' %}bg-blue-900 text-blue-300
+      {% else %}bg-purple-900 text-purple-300{% endif %}">
+      {{ rule.rule_type }}
+    </span>
+  </div>
+  <div class="mt-2 flex gap-2 flex-wrap">
+    {% for t in rule.attack_techniques %}
+    <span class="text-xs bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded">{{ t }}</span>
+    {% endfor %}
+  </div>
+  <div class="mt-3 flex items-center justify-between">
+    <span class="text-xs text-gray-500">confidence: {{ "%.0f"|format(rule.confidence * 100) }}%</span>
+    <a href="/rules/{{ rule.id }}" class="text-xs text-emerald-400 hover:underline">View →</a>
+  </div>
+</div>
+{% else %}
+<p class="text-gray-500 text-sm">No rules yet. Ingest CTI to generate your first rule.</p>
+{% endfor %}

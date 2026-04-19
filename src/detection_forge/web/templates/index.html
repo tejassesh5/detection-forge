@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}detection-forge — Rules{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+  <div class="bg-gray-900 rounded-lg p-6 border border-gray-800">
+    <h2 class="text-lg font-semibold mb-4 text-emerald-400">Ingest CTI</h2>
+    <form hx-post="/api/cti/ingest/text" hx-target="#rule-list" hx-swap="innerHTML"
+          hx-indicator="#spinner" class="space-y-3">
+      <input type="text" name="title" placeholder="Report title (optional)"
+             class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"/>
+      <textarea name="text" rows="10" placeholder="Paste CTI report..."
+                class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:border-emerald-500" required></textarea>
+      <button type="submit"
+              class="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded py-2 text-sm font-medium">
+        Generate Rule
+      </button>
+    </form>
+    <div id="spinner" class="htmx-indicator mt-2 text-sm text-gray-400">Generating...</div>
+  </div>
+  <div>
+    <h2 class="text-lg font-semibold mb-4 text-emerald-400">Rules Library</h2>
+    <div id="rule-list"
+         hx-get="/api/rules/partials/list" hx-trigger="load"
+         class="space-y-3">
+      <p class="text-gray-500 text-sm">Loading rules...</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
