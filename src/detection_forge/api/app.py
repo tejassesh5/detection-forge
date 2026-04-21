@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -29,14 +30,14 @@ async def lifespan(app: FastAPI):
     app.state.templates = TEMPLATES
 
     from ..vector.store import VectorStore
-    settings = get_settings()
     try:
         vs = VectorStore(host=settings.qdrant_host, port=settings.qdrant_port)
-        await vs.ensure_collection()
+        await asyncio.wait_for(vs.ensure_collection(), timeout=5)
         app.state.vector_store = vs
         log.info("qdrant.connected")
     except Exception as e:
         log.warning("qdrant.unavailable", error=str(e))
+        app.state.vector_store = None
 
     log.info("startup.complete")
     yield

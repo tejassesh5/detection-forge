@@ -3,7 +3,6 @@ from __future__ import annotations
 import structlog
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
-from sentence_transformers import SentenceTransformer
 
 log = structlog.get_logger()
 
@@ -13,8 +12,14 @@ VECTOR_SIZE = 384  # all-MiniLM-L6-v2
 
 class VectorStore:
     def __init__(self, host: str = "localhost", port: int = 6333) -> None:
-        self._client = AsyncQdrantClient(host=host, port=port)
-        self._encoder = SentenceTransformer("all-MiniLM-L6-v2")
+        self._client = AsyncQdrantClient(host=host, port=port, timeout=3)
+        self._encoder = None
+
+    def _get_encoder(self):
+        if self._encoder is None:
+            from sentence_transformers import SentenceTransformer
+            self._encoder = SentenceTransformer("all-MiniLM-L6-v2")
+        return self._encoder
 
     async def ensure_collection(self) -> None:
         collections = await self._client.get_collections()
@@ -26,7 +31,7 @@ class VectorStore:
             )
 
     def _embed(self, text: str) -> list[float]:
-        return self._encoder.encode(text, normalize_embeddings=True).tolist()
+        return self._get_encoder().encode(text, normalize_embeddings=True).tolist()
 
     async def upsert(self, doc_id: str, text: str, payload: dict) -> None:
         vector = self._embed(text)
