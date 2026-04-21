@@ -13,6 +13,7 @@ from ...config import build_gateway
 from ...cti.models import CTIItem, SourceType
 from ...db import CTIRecord
 from ...db import Rule as RuleDB
+from ...db import TestRun
 from ...forge.pipeline import ForgePipeline
 
 router = APIRouter()
@@ -107,6 +108,79 @@ async def get_rule(rule_id: str, db: AsyncSession = Depends(get_db)):
         "attack_techniques": rule.attack_techniques,
         "created_at": rule.created_at.isoformat(),
     }
+
+
+class ScoreRequest(BaseModel):
+    matched: bool
+    event_count: int
+    duration_ms: int
+    technique_id: str = ""
+    atomic_name: str = "purple-loop"
+
+
+@router.post("/{rule_id}/score")
+async def post_score(rule_id: str, body: ScoreRequest, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(RuleDB).where(RuleDB.id == rule_id))
+    rule = result.scalar_one_or_none()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+
+    score = 1.0 if body.matched else 0.0
+    run = TestRun(
+        id=str(uuid.uuid4()),
+        rule_id=rule_id,
+        corpus_name=body.atomic_name or "purple-loop",
+        score=score,
+        precision=score,
+        recall=score,
+        tp_count=1 if body.matched else 0,
+        fp_count=0,
+        details={
+            "event_count": body.event_count,
+            "duration_ms": body.duration_ms,
+            "technique_id": body.technique_id,
+            "source": "purple-loop",
+        },
+    )
+    db.add(run)
+    await db.commit()
+
+    return {
+        "id": run.id,
+        "rule_id": rule_id,
+        "score": run.score,
+        "matched": body.matched,
+        "tp_count": run.tp_count,
+        "created_at": run.created_at.isoformat(),
+    }
+
+
+@router.get("/{rule_id}/score")
+async def get_scores(rule_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(RuleDB).where(RuleDB.id == rule_id))
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Rule not found")
+
+    runs_result = await db.execute(
+        select(TestRun)
+        .where(TestRun.rule_id == rule_id)
+        .order_by(TestRun.created_at.desc())
+    )
+    runs = runs_result.scalars().all()
+    return [
+        {
+            "id": r.id,
+            "corpus_name": r.corpus_name,
+            "score": r.score,
+            "precision": r.precision,
+            "recall": r.recall,
+            "tp_count": r.tp_count,
+            "fp_count": r.fp_count,
+            "details": r.details,
+            "created_at": r.created_at.isoformat(),
+        }
+        for r in runs
+    ]
 
 
 @router.get("/{rule_id}/export")
